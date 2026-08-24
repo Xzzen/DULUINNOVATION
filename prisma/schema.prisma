@@ -1,0 +1,94 @@
+// File: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==========================================
+// 1. MODUL CRM (Sisi Bisnis & Klien)
+// ==========================================
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  industry  String
+  status    String   @default("PROSPECT") // PROSPECT, DEAL, ACTIVE
+  jobs      Job[]
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 2. MODUL HR & FIELDOPS (Sisi Pekerja)
+// ==========================================
+model Employee {
+  id           String   @id @default(cuid())
+  name         String
+  role         String   // Contoh: Teknisi, Kurir, Cleaning Service
+  baseCapacity Int      @default(100) // Metrik awal untuk AI Workload Score
+  jobs         Job[]
+  createdAt    DateTime @default(now())
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  name           String
+  coordinates    String
+  historicalJobs Job[]
+}
+
+// ==========================================
+// 3. MODUL WORKPULSE & FIELDOPS (Sisi Operasional)
+// ==========================================
+model Job {
+  id             String    @id @default(cuid())
+  title          String
+  status         String    @default("CREATED") 
+  // Status flow: CREATED -> ASSIGNED -> CHECKED_IN -> EXECUTED -> PROOF_UPLOADED -> SUPERVISOR_VERIFIED -> CLIENT_APPROVED
+  
+  // Metrik Waktu (Data Utama untuk AI Copilot)
+  assignedDate   DateTime  @default(now())
+  deadline       DateTime
+  checkInTime    DateTime?
+  completedTime  DateTime?
+  
+  // Relasi Data (Saling Terhubung 100%)
+  clientId       String
+  client         Client    @relation(fields: [clientId], references: [id])
+  
+  employeeId     String?   // Bisa kosong jika tugas baru masuk dari CRM dan belum di-assign
+  employee       Employee? @relation(fields: [employeeId], references: [id])
+  
+  locationId     String
+  location       Location  @relation(fields: [locationId], references: [id])
+  
+  // Data Mentah Lapangan (Uncleaned Data dari Mobile)
+  gpsRawData     String?   
+  proofImageUrl  String?
+  clientRating   Int?      // Rating kepuasan klien 1-5
+  feedbackNote   String?   // Catatan tambahan dari klien
+}
+
+// ==========================================
+// 4. MODUL VENDORFLOW (Sisi Suplai)
+// ==========================================
+model Vendor {
+  id          String   @id @default(cuid())
+  name        String
+  serviceType String
+  score       Float    @default(0) // Skor performa AI
+  contracts   VendorContract[]
+}
+
+model VendorContract {
+  id            String    @id @default(cuid())
+  title         String
+  vendorId      String
+  vendor        Vendor    @relation(fields: [vendorId], references: [id])
+  deadline      DateTime
+  deliveryDate  DateTime?
+  qualityScore  Int?      // Penilaian kualitas
+  priceScore    Int?      // Penilaian harga
+}
