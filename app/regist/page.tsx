@@ -22,18 +22,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Step 1: Company Profile
     companyName: '',
     industry: '',
     companySize: '',
     address: '',
-    logoName: '', // State baru untuk menyimpan nama file logo
-    // Step 2: Admin Account
+    logoName: '', 
     adminName: '',
     adminEmail: '',
     adminPhone: '',
     password: '',
-    // Step 3: Operational
     timezone: 'Asia/Makassar',
     workingDays: 'Senin - Jumat',
     divisions: ''
@@ -42,18 +39,15 @@ export default function OnboardingPage() {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  // Fungsi untuk menangani upload logo
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Dalam implementasi nyata, Anda akan mengunggah file ini ke cloud storage (seperti AWS S3 atau Supabase)
       setFormData({ ...formData, logoName: file.name });
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulasi pengiriman data ke API (Prisma)
     console.log("Data Onboarding Tersimpan:", formData);
     alert("Setup Workspace Perusahaan Selesai! Mengarahkan ke Dashboard...");
     window.location.href = "/";
@@ -63,7 +57,6 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 md:p-8 py-12">
       <div className="max-w-3xl w-full">
         
-        {/* Header Setup */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 text-white rounded-2xl shadow-lg mb-5 text-2xl font-black ring-4 ring-teal-600/20">
             D
@@ -74,7 +67,6 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Progress Indicator */}
         <div className="flex items-center justify-between mb-8 relative px-2">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-200 -z-10 rounded-full"></div>
           <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-teal-600 -z-10 rounded-full transition-all duration-500" style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
@@ -96,7 +88,6 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        {/* Formulir Card */}
         <Card className="shadow-xl border-zinc-200/60 bg-white/80 backdrop-blur-sm">
           <CardHeader className="border-b border-zinc-100 bg-zinc-50/50 pb-6 rounded-t-xl">
             <CardTitle className="text-xl text-zinc-900">
@@ -116,7 +107,6 @@ export default function OnboardingPage() {
           <CardContent className="pt-6">
             <form onSubmit={step === 4 ? handleSubmit : (e) => { e.preventDefault(); nextStep(); }} className="space-y-6">
               
-              {/* STEP 1: PROFIL PERUSAHAAN */}
               {step === 1 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                   
@@ -137,7 +127,6 @@ export default function OnboardingPage() {
                         </div>
                         <p className="text-xs text-zinc-500">PNG, JPG up to 2MB</p>
                         
-                        {/* Preview nama file yang diupload */}
                         {formData.logoName && (
                           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-bold border border-teal-200">
                             <CheckCircle2 size={12} /> {formData.logoName}
@@ -187,7 +176,6 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 2: ADMIN ACCOUNT */}
               {step === 2 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                   <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl mb-2">
@@ -218,7 +206,6 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 3: DIVISI & WAKTU */}
               {step === 3 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                   <div className="space-y-1.5">
@@ -248,7 +235,6 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP 4: KONFIRMASI */}
               {step === 4 && (
                 <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
                   
@@ -282,7 +268,6 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex justify-between pt-6 border-t border-zinc-100 mt-8">
                 {step > 1 ? (
                   <Button type="button" variant="outline" onClick={prevStep} className="font-semibold px-6 border-zinc-300 text-zinc-700 hover:bg-zinc-50">
