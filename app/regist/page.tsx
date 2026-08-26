@@ -22,36 +22,92 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    companyName: '',
-    industry: '',
-    companySize: '',
-    address: '',
-    logoName: '', 
-    adminName: '',
-    adminEmail: '',
-    adminPhone: '',
-    password: '',
-    timezone: 'Asia/Makassar',
-    workingDays: 'Senin - Jumat',
-    divisions: ''
-  });
+  companyName: '',
+  industry: '',
+  companySize: '',
+  address: '',
+  logoName: '',
+  logoFile: null as File | null,
+  adminName: '',
+  adminEmail: '',
+  adminPhone: '',
+  password: '',
+  timezone: 'Asia/Makassar',
+  workingDays: 'Senin - Jumat',
+  divisions: ''
+});
 
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, logoName: file.name });
-    }
-  };
+  const file = e.target.files?.[0];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Data Onboarding Tersimpan:", formData);
-    alert("Setup Workspace Perusahaan Selesai! Mengarahkan ke Dashboard...");
-    window.location.href = "/";
-  };
+  if (!file) return;
+
+  const maxSize = 2 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+    alert('Ukuran logo maksimal 2MB.');
+    e.target.value = '';
+    return;
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    logoName: file.name,
+    logoFile: file,
+  }));
+};
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const submitData = new FormData();
+
+    submitData.append('companyName', formData.companyName);
+    submitData.append('industry', formData.industry);
+    submitData.append('companySize', formData.companySize);
+    submitData.append('address', formData.address);
+    submitData.append('logoName', formData.logoName);
+
+    submitData.append('adminName', formData.adminName);
+    submitData.append('adminEmail', formData.adminEmail);
+    submitData.append('adminPhone', formData.adminPhone);
+    submitData.append('password', formData.password);
+
+    submitData.append('timezone', formData.timezone);
+    submitData.append('workingDays', formData.workingDays);
+    submitData.append('divisions', formData.divisions);
+
+    if (formData.logoFile) {
+      submitData.append('logo', formData.logoFile);
+    }
+
+    const response = await fetch('/api/regist', {
+      method: 'POST',
+      body: submitData,
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      localStorage.setItem('activeCompanyId', result.data.id);
+
+      alert(
+        'Setup Workspace Perusahaan Selesai! Mengarahkan ke Dashboard...'
+      );
+
+      window.location.href = '/';
+    } else {
+      alert('Gagal: ' + result.error);
+    }
+  } catch (error) {
+    console.error('REGISTER ERROR:', error);
+    alert('Terjadi kesalahan jaringan.');
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 md:p-8 py-12">

@@ -1,166 +1,145 @@
-// File: prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite" // Bisa diganti ke "postgresql" saat rilis produksi
+  provider = "sqlite"
 }
 
 // ==========================================
-// 1. MODUL SAAS & ONBOARDING (Kunci Keamanan Multi-Tenant)
+// 0. MULTI-TENANCY & KONFIGURASI (NEW)
+// ... (Biarkan kode model ke bawah tetap sama)
+
+// ==========================================
+// 0. MULTI-TENANCY & KONFIGURASI (NEW)
 // ==========================================
 model Company {
   id          String   @id @default(cuid())
   name        String
-  logo        String?
   industry    String
+  size        String?
+  address     String?
+  logoName    String?
+  logoUrl     String?
   timezone    String   @default("Asia/Makassar")
+  workingDays String   @default("Senin - Jumat")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  // Relasi: Satu perusahaan memiliki banyak data di bawah ini
-  users           User[]
-  clients         Client[]
-  employees       Employee[]
-  locations       Location[]
-  jobs            Job[]
-  vendors         Vendor[]
+  // Relasi Data (Isolasi per perusahaan)
+  admins    Admin[]
+  divisions Division[]
+  employees Employee[]
+  clients   Client[]
+  jobs      Job[]
 }
 
-model User {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  password    String   // Di-hash untuk login
-  role        String   // "SUPER_ADMIN", "SALES", "SUPERVISOR"
-  
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+model Admin {
+  id        String  @id @default(cuid())
+  name      String
+  email     String  @unique
+  phone     String
+  password  String // Nanti akan di-hash
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Division {
+  id        String     @id @default(cuid())
+  name      String
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees Employee[] // Karyawan mana saja yang masuk divisi ini
 }
 
 // ==========================================
-// 2. MODUL CRM PIPELINE (Sisi Bisnis & Klien)
+// 1. MODUL CRM (Sisi Bisnis & Klien)
 // ==========================================
 model Client {
-  id          String   @id @default(cuid())
-  name        String
-  industry    String
-  status      String   @default("PROSPECT") // PROSPECT, SURVEY, NEGOTIATION, DEAL_WON
-
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  jobs        Job[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  industry  String
+  status    String   @default("PROSPECT")
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobs      Job[]
+  createdAt DateTime @default(now())
 }
 
 // ==========================================
-// 3. MODUL HR & FIELDOPS (Sisi Pekerja)
+// 2. MODUL HR & FIELDOPS (Sisi Pekerja)
 // ==========================================
 model Employee {
-  id            String   @id @default(cuid())
-  name          String
-  role          String   // Contoh: Teknisi, Kurir, Cleaning Service
-  baseCapacity  Int      @default(100) // Metrik awal untuk AI Workload Score
-  
-  companyId     String
-  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id   String @id @default(cuid())
+  name String
 
-  jobs          Job[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // Sekarang role diganti jadi relasi ke tabel Division
+  divisionId String
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  baseCapacity Int      @default(100)
+  jobs         Job[]
+  createdAt    DateTime @default(now())
 }
 
 model Location {
-  id             String   @id @default(cuid())
+  id             String @id @default(cuid())
   name           String
-  coordinates    String   // Format: "latitude,longitude"
-  
-  companyId      String
-  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
+  coordinates    String
   historicalJobs Job[]
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 }
 
 // ==========================================
-// 4. MODUL WORKPULSE & FIELDOPS (Sisi Operasional)
+// 3. MODUL WORKPULSE & FIELDOPS (Sisi Operasional)
 // ==========================================
 model Job {
-  id             String   @id @default(cuid())
-  title          String
-  status         String   @default("CREATED") 
-  // CREATED -> DISPATCHED -> CHECKED_IN -> COMPLETED -> VERIFIED
-  
-  // Metrik Waktu (Data Utama untuk AI Copilot)
-  assignedDate   DateTime @default(now())
-  deadline       DateTime
-  checkInTime    DateTime?
-  completedTime  DateTime?
-  
-  // Relasi Multi-Tenant
-  companyId      String
-  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  title  String
+  status String @default("CREATED")
 
-  // Relasi Data 
-  clientId       String
-  client         Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  
-  employeeId     String?  // Bisa kosong jika baru deal di CRM dan AI belum membagi tugas
-  employee       Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  
-  locationId     String
-  location       Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  
-  // Data Mentah Lapangan (FieldOps App)
-  gpsRawData     String?   
-  proofImageUrl  String?
-  clientRating   Int?      // Rating kepuasan klien 1-5
-  feedbackNote   String?   // Catatan klien
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  assignedDate  DateTime  @default(now())
+  deadline      DateTime
+  checkInTime   DateTime?
+  completedTime DateTime?
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+
+  gpsRawData    String?
+  proofImageUrl String?
+  clientRating  Int?
+  feedbackNote  String?
 }
 
 // ==========================================
-// 5. MODUL VENDORFLOW (Sisi Suplai)
+// 4. MODUL VENDORFLOW (Sisi Suplai)
 // ==========================================
 model Vendor {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
   serviceType String
-  score       Float    @default(0) // Skor performa AI
-
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
+  score       Float            @default(0)
   contracts   VendorContract[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
 model VendorContract {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   title        String
+  vendorId     String
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
   deadline     DateTime
   deliveryDate DateTime?
-  qualityScore Int?      // Penilaian kualitas (1-100)
-  priceScore   Int?      // Penilaian harga (1-100)
-
-  vendorId     String
-  vendor       Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  qualityScore Int?
+  priceScore   Int?
 }
