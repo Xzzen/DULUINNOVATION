@@ -43,7 +43,7 @@ export default function Sidebar() {
           <div>
             <div className="text-[11px] font-bold text-zinc-400 mb-2 px-3 tracking-widest uppercase">Analytics & AI</div>
             <nav className="space-y-1">
-              <Link href="/" className={getLinkClass('/')}>
+              <Link href="/copilot" className={getLinkClass('/copilot')}>
                 <Activity size={18} className="group-hover:text-teal-600 transition-colors" /> AI Copilot
               </Link>
               <Link href="/workpulse" className={getLinkClass('/workpulse')}>
